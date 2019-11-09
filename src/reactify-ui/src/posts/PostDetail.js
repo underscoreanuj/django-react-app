@@ -2,13 +2,14 @@ import React, {Component} from 'react';
 import { Link } from 'react-router-dom';
 import 'whatwg-fetch';
 import cookie from 'react-cookies';
-import PostUpdate from './PostUpdate';
+import PostForm from './PostForm';
 
 
 class PostDetail extends Component {
 
     constructor(props) {
         super(props);
+        this.handlePostItemUpdated = this.handlePostItemUpdated.bind(this);
         this.state = {
             slug: null,
             post: null,
@@ -67,6 +68,12 @@ class PostDetail extends Component {
     
       }
 
+    handlePostItemUpdated(postItemData) {
+        this.setState({
+            post: postItemData
+        });
+    }
+
     render() {
         const {doneLoading} = this.state;
         const {slug} = this.state;
@@ -86,7 +93,7 @@ class PostDetail extends Component {
                             </p>
 
                             <h1>{post.title}</h1>
-                            {post.owner === true ? <div><PostUpdate post={post} /></div> : "" }
+                            {post.owner === true ? <div><PostForm post={post} postItemUpdated={this.handlePostItemUpdated} /></div> : "" }
                             </div>
                         : <div>Not Found!!!</div> }
                     </div>

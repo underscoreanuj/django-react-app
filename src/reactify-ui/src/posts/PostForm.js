@@ -4,7 +4,7 @@ import cookie from 'react-cookies';
 import moment from 'moment';
 
 
-class PostUpdate extends Component {
+class PostForm extends Component {
 
     constructor(props) {
         super(props);
@@ -15,7 +15,7 @@ class PostUpdate extends Component {
 
         this.state = {
             "title": null,
-            "content": null,
+            "content": "",
             "draft": false,
             "publish": moment(new Date()).format('YYYY-MM-DD'),
             errors: {}
@@ -34,24 +34,23 @@ class PostUpdate extends Component {
                 "publish": moment(post.publish).format('YYYY-MM-DD')
             });
         } else {
-            this.setState({
-                "title": null,
-                "content": null,
-                "draft": false,
-                "publish": moment(new Date()).format('YYYY-MM-DD')
-            });
+            this.defaultState();
         }
 
-        this.postTitleRef.current.focus();
+        // this.postTitleRef.current.focus();
     }
 
     handleSubmit(event) {
         event.preventDefault();
 
         let data = this.state;
-        console.log(data);
-
-        this.updatePost(data);
+        
+        const{post} = this.props;
+        if (post !== undefined) {
+            this.updatePost(data);
+        } else {
+            this.createPost(data);   
+        }
     }
 
     handleInputChange(event) {
@@ -71,13 +70,57 @@ class PostUpdate extends Component {
         })
     }
 
+    defaultState() {
+        this.setState({
+            "title": null,
+            "content": "",
+            "draft": false,
+            "publish": moment(new Date()).format('YYYY-MM-DD')
+        });
+    }
+
     clearForm(event) {
         if (event) {
             event.preventDefault();
         }
 
         this.postCreateForm.reset();
+        this.defaultState();
     }
+
+    createPost(data) {
+        const endpoint = '/api/posts/';
+        const csrfToken = cookie.load('csrftoken');
+
+        let thisComp = this
+
+        if (csrfToken !== undefined) {
+            
+          let lookupOptions = {
+            method: "POST",
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data),
+            credentials: 'include'
+          }
+      
+          fetch(endpoint, lookupOptions)
+          .then(function(response) {
+            return response.json();
+          }).then(function(responseData) {
+            console.log(responseData);
+            if (thisComp.props.newPostItemCreated) {
+                thisComp.props.newPostItemCreated(responseData);
+                thisComp.clearForm();
+            }
+          }).catch(function(error) {
+            console.log(error);
+          });
+        }
+    
+      }
 
     updatePost(data) {
         const {post} = this.props;
@@ -104,8 +147,8 @@ class PostUpdate extends Component {
             return response.json();
           }).then(function(responseData) {
             console.log(responseData);
-            if (thisComp.props.newPostItemCreated) {
-                thisComp.props.newPostItemCreated(responseData);
+            if (thisComp.props.postItemUpdated) {
+                thisComp.props.postItemUpdated(responseData);
                 thisComp.clearForm();
             }
           }).catch(function(error) {
@@ -119,6 +162,9 @@ class PostUpdate extends Component {
         const {title} = this.state;
         const {content} = this.state;
         const {publish} = this.state;
+
+        const cancelClass = this.props.post === undefined ? "" : "d-none";
+
         return (
             <form onSubmit={this.handleSubmit} ref={(el) => this.postCreateForm = el}>
                 <div className='form-group'>
@@ -169,10 +215,10 @@ class PostUpdate extends Component {
                     required='required' />
                 </div>
                 <button className='btn btn-primary'>Save</button>
-                <button className={`btn btn-primary ${this.props.post === undefined ? "d-block" : "d-none"}`} onClick={this.clearForm}>Clear</button>
+                <button className={`btn btn-primary ${cancelClass}`} onClick={this.clearForm}>Clear</button>
             </form>
         );
     }
 }
 
-export default PostUpdate;
+export default PostForm;

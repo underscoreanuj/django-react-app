@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import 'whatwg-fetch';
 import cookie from 'react-cookies';
+import { Link } from 'react-router-dom';
 
 import PostInline from './PostInline';
-import PostCreate from './PostCreate';
 
 
 class Posts extends Component {
@@ -13,16 +13,26 @@ class Posts extends Component {
     super(props);
     this.togglePostsListClass = this.togglePostsListClass.bind(this);
     this.handleNewPost = this.handleNewPost.bind(this);
+    this.loadMorePosts = this.loadMorePosts.bind(this);
+
+    this.state = {
+      posts: [],
+      postsListClass: "card",
+      next: null,
+      prev: null,
+      author: false,
+      count: 0
+    }
 
   }
 
-  state = {
-    posts: [],
-    postsListClass: "card",
-  }
+  loadPosts(next_url) {
+    
+    let endpoint = '/api/posts/';
+    if (next_url !== undefined) {
+      endpoint = next_url;
+    }
 
-  loadPosts() {
-    const endpoint = '/api/posts/';
     let thisComp = this
     let lookupOptions = {
       method: "GET",
@@ -31,24 +41,50 @@ class Posts extends Component {
       }
     }
 
+
+    const csrfToken = cookie.load('csrftoken');
+
+    if (csrfToken !== undefined) {
+        lookupOptions['headers']['X-CSRFToken'] = csrfToken;
+        lookupOptions['credentials'] = 'include';
+    }
+
+
     fetch(endpoint, lookupOptions)
     .then(function(response) {
       return response.json();
     }).then(function(responseData) {
-      console.log(responseData);
+
       thisComp.setState({
-        posts: responseData
+        posts: thisComp.state.posts.concat(responseData.results),
+        next: responseData.next,
+        prev: responseData.prev,
+        author: responseData.author,
+        count: responseData.count
       });
+
     }).catch(function(error) {
       console.log(error);
     });
 
   }
 
+  loadMorePosts() {
+    const {next} = this.state;
+
+    if (next !== null && next !== undefined) {
+      this.loadPosts(next);
+    }
+  }
+
   componentDidMount() {
     this.setState({
       posts: [],
       postsListClass: "card",
+      next: null,
+      prev: null,
+      author: false,
+      count: 0
     })
     this.loadPosts();
   }
@@ -82,7 +118,8 @@ class Posts extends Component {
 
     const {posts} = this.state;
     const {postsListClass} = this.state;
-    const csrfToken = cookie.load('csrftoken');
+    const {author} = this.state;
+    const {next} = this.state;
 
     return (
       <div className="App">
@@ -91,6 +128,14 @@ class Posts extends Component {
         </header>
 
         <button onClick={this.togglePostsListClass}>Toogle View</button>
+        
+        {author === true ? 
+          <Link className='mr-2' maintainScrollPosition={false} to={{
+            pathname: `/posts/create`,
+            state: {fromDashboard: false}
+        }}>Create Post</Link>  
+        
+        : ""}
 
         {posts.length > 0 ? posts.map((postItem, index)=>{
           return (
@@ -98,10 +143,8 @@ class Posts extends Component {
           )
         }) : <p>Empty here...</p>}
 
-        {(csrfToken !== undefined && csrfToken !== null) ? 
-        <div className='my-5'>
-            <PostCreate newPostItemCreated={this.handleNewPost}/>
-          </div>
+        {(next !== null && next !== undefined) ? 
+          <button onClick={this.loadMorePosts}>more...</button>
         : ""}
 
         </div>
