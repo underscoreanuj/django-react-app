@@ -28,6 +28,7 @@ class PostSerializer(serializers.ModelSerializer):
                             )
     user            = UserPublicSerializer(read_only=True)
     publish         = serializers.DateField(default=timezone.now())
+    owner           = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Post
