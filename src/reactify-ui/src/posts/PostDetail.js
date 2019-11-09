@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import { Link } from 'react-router-dom';
 import 'whatwg-fetch';
 import cookie from 'react-cookies';
+import PostUpdate from './PostUpdate';
 
 
 class PostDetail extends Component {
@@ -85,7 +86,7 @@ class PostDetail extends Component {
                             </p>
 
                             <h1>{post.title}</h1>
-                            {post.owner === true ? <div>Update</div> : "" }
+                            {post.owner === true ? <div><PostUpdate post={post} /></div> : "" }
                             </div>
                         : <div>Not Found!!!</div> }
                     </div>
